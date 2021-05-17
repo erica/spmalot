@@ -17,12 +17,12 @@ struct Boilerplate {
 
     static func dumpREADME(name: String, style: ProjectStyle, sap: Bool, gen: Bool, mac: Bool) throws {
         var boilerplate = "# \(name)\n\n"
-        boilerplate += (style == .exe) ? "An executable project.\n" : "A library.\n"
+        boilerplate += (style == .exe) ? "An executable project.\n" : "A library project.\n"
         boilerplate += """
 
             ## Overview
 
-            An overview of this project
+            An overview of this project.
 
             ## Known Issues
 
@@ -57,6 +57,8 @@ struct Boilerplate {
                 * Install [mint](https://github.com/yonaskolb/Mint) with homebrew (`brew install mint`).
                 * From command line: `mint install erica/\(name)`
 
+                Note: This project uses a `master` branch to support `mint` installation.
+
                 """
         }
 
@@ -76,7 +78,7 @@ struct Boilerplate {
         let boilerplate = """
             # CHANGELOG
 
-            ## 0.0.0
+            ## 0.0.1
             Initial Commit
             """
 
@@ -158,48 +160,61 @@ struct Boilerplate {
     static func buildPackage(name: String, url: URL, exe: Bool, sap: Bool, gen: Bool, mac: Bool) throws {
         var boilerplate = """
             // swift-tools-version:5.3
+            """
+
+        // Add SAP note to the Project.swift file only when appropriate
+        if exe && sap {
+            boilerplate += """
             // Version 5.3 required for Swift Argument Parser. Supports Catalina+
+            """
+        }
+
+        boilerplate += """
 
             import PackageDescription
 
             let package = Package(
-                // This name is normally synonymous with a hosted git repo
+                // This package name is normally synonymous with a hosted git repo and typically
+                // uses lower or upper kebab casing.
                 name: "\(name)",
 
+                // The oldest platform capable of supporting this code.
                 platforms: [.macOS(.v10_12)],
 
-                // The executables or libraries produced by this project
+                // The executables and/or libraries produced by this project
                 products: [
 
             """
 
         if exe  {
             boilerplate += """
-                    // This is the call name of the executable that is produced
+                    // The name of the executable produced by this project.
                     .executable(name: "\(name)",
 
-                        // The targets named here are the modules listed in the targets section
+                        // These are modules listed in the targets section.
                         targets: ["\(name)"]),
                 ],
-
-                dependencies: [
 
             """
         } else {
             boilerplate += """
-                    // This is the call name of the library that is produced.
-                    // You don't import that name. You import the names of the
-                    // module targets included within the library.
+                    // The linkable name of the library that is produced.
                     .library(name: "\(name)",
 
-                        // The targets named here are the modules listed in the targets section
+                        // A library includes one or more module targets, which are the modules
+                        // you import into your Swift code when using this library.
+                        // The module names are listed in the targets section.
                         targets: ["\(name)"]),
                 ],
 
-                dependencies: [
-
             """
         }
+
+        boilerplate += """
+
+            dependencies: [
+
+        """
 
         if exe && sap {
             // This is exact because of the changes in SAP
@@ -227,12 +242,11 @@ struct Boilerplate {
         boilerplate += """
                 ],
 
+                // Create module targets
                 targets: [
-                    // Create module targets
-
                     .target(
                         // This is the module name. It is used by the product section targets
-                        // and by any test target
+                        // and by test target dependencies. SPM now requires both module and package names.
                         name: "\(name)",
                         dependencies: [
 
@@ -252,10 +266,10 @@ struct Boilerplate {
 
         boilerplate += """
                         ],
-                        path: "Sources/" // Omit or override if needed
+                        path: "Sources/" // Omit or override if needed. Overrides help .xcodeproj integration.
                     ),
 
-                    // Test target omitted here
+                    // Test target omitted here. FIXME!
                     //.testTarget(name: "\(name)Tests", dependencies: ["\(name)"]),
                 ],
 
